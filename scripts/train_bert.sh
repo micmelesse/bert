@@ -9,10 +9,7 @@ if [ ! "$BASH_VERSION" ]; then
 fi
 
 # process commandline args
-if [[ "$*" == *"rpt"* ]]; then
-  echo "Collecting RPT summary"
-  export HCC_PROFILE=2
-fi
+
 # choose arch
 if [[ "$*" == *"base"* ]]; then
   MODEL_CONFIG_DIR=configs/bert_base
@@ -20,7 +17,6 @@ if [[ "$*" == *"base"* ]]; then
 else
   MODEL_CONFIG_DIR=configs/bert_large
   TRAIN_DIR=bert_large
- 
 fi
 
 # check if multi gpu
@@ -40,9 +36,23 @@ else
 fi
 
 if [[ "$*" == *"nvidia"* ]]; then
-    TRAIN_DIR="${TRAIN_DIR}_nvidia"
+  TRAIN_DIR="${TRAIN_DIR}_nvidia"
 else
-    TRAIN_DIR="${TRAIN_DIR}_amd"
+  TRAIN_DIR="${TRAIN_DIR}_amd"
+fi
+
+# collect rpt summary
+if [[ "$*" == *"rpt"* ]]; then
+  echo "Collecting RPT summary"
+  export HCC_PROFILE=2
+  TRAIN_DIR="${TRAIN_DIR}_rpt"
+fi
+
+# rocblas trace
+if [[ "$*" == *"rocblas"* ]]; then
+  echo "ROCBLAS Trace"
+  export ROCBLAS_LAYER=3
+  TRAIN_DIR="${TRAIN_DIR}_rocblas"
 fi
 
 #set num of train steps
@@ -56,9 +66,10 @@ else
   TRAIN_WARM_STEPS=150
 fi
 
-CODE_DIR=.
+# set data dir
 DATA_DIR=./data
 
+# clean prev train dir
 rm -rf $TRAIN_DIR
 mkdir -p $TRAIN_DIR
 
@@ -72,12 +83,13 @@ DATA_SOURCE_NAME=$(basename "$DATA_SOURCE_FILE_PATH")
 # iterate through configs (Batch, Sequence Length)
 BATCH=4
 SEQ=512
+
 # calculate max prediction per seq
-  MASKED_LM_PROB=0.15
-  calc_max_pred() {
-    echo $(python3 -c "import math; print(math.ceil($SEQ*$MASKED_LM_PROB))")
-  }
-  MAX_PREDICTION_PER_SEQ=$(calc_max_pred)
+MASKED_LM_PROB=0.15
+calc_max_pred() {
+  echo $(python3 -c "import math; print(math.ceil($SEQ*$MASKED_LM_PROB))")
+}
+MAX_PREDICTION_PER_SEQ=$(calc_max_pred)
 
 # create config train dir
 CUR_TRAIN_DIR=$TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}
@@ -86,8 +98,8 @@ mkdir -p $CUR_TRAIN_DIR
 DATA_TFRECORD=$DATA_DIR/${DATA_SOURCE_NAME}_seq${SEQ}.tfrecord
 if [ ! -f "$DATA_TFRECORD" ]; then
   # generate tfrecord of data
-  python3 $CODE_DIR/create_pretraining_data.py \
-    --input_file=$CODE_DIR/$DATA_SOURCE_FILE_PATH \
+  python3 create_pretraining_data.py \
+    --input_file=$DATA_SOURCE_FILE_PATH \
     --output_file=$DATA_TFRECORD \
     --vocab_file=$TRAIN_DIR/vocab.txt \
     --do_lower_case=True \
@@ -100,14 +112,12 @@ fi
 
 # rocblas trace
 if [[ "$*" == *"rocblas"* ]]; then
-  echo "ROCBLAS Trace"
-  export ROCBLAS_LAYER=3
   export ROCBLAS_LOG_TRACE_PATH=$CUR_TRAIN_DIR/rocblas_log_trace.txt
   export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench.txt
 fi
 
 # run pretraining
-python3 $CODE_DIR/run_pretraining.py \
+python3 run_pretraining.py \
   --input_file=$DATA_TFRECORD \
   --output_dir=$CUR_TRAIN_DIR \
   --do_train=True \
@@ -123,6 +133,6 @@ python3 $CODE_DIR/run_pretraining.py \
 
 # get rpt summary
 if [[ "$*" == *"rpt"* ]]; then
-  /opt/rocm/hcc/bin/rpt --topn -1  $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}.txt \
-  >$CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_rpt_summary.txt
+  /opt/rocm/hcc/bin/rpt --topn -1 $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}.txt \
+    >$CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_rpt_summary.txt
 fi

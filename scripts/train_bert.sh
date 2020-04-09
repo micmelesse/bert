@@ -2,19 +2,22 @@
 
 # use bash
 SCRIPT_PATH=$(realpath $0)
+SCRIPT_DIR_PATH=$(dirname $SCRIPT_PATH)
 if [ ! "$BASH_VERSION" ]; then
-  echo "Using bash to run this script $0" 1>&2
-  exec bash $SCRIPT_PATH "$@"
-  exit 1
+    echo "Using bash to run this script $0" 1>&2
+    exec bash $SCRIPT_PATH "$@"
+    exit 1
 fi
 
 # process commandline args
 
 # choose arch
 if [[ "$*" == *"base"* ]]; then
+  echo "Running BERT Base"
   MODEL_CONFIG_DIR=configs/bert_base
   TRAIN_DIR=bert_base
 else
+  echo "Running BERT Large"
   MODEL_CONFIG_DIR=configs/bert_large
   TRAIN_DIR=bert_large
 fi
@@ -36,8 +39,10 @@ else
 fi
 
 if [[ "$*" == *"nvidia"* ]]; then
+  echo "Running on Nvidia"
   TRAIN_DIR="${TRAIN_DIR}_nvidia"
 else
+  echo "Running on AMD"
   TRAIN_DIR="${TRAIN_DIR}_amd"
 fi
 
@@ -62,8 +67,8 @@ if [[ "$*" == *"debug"* ]]; then
   TRAIN_WARM_STEPS=1
   TRAIN_DIR="${TRAIN_DIR}_debug"
 else
-  TRAIN_STEPS=1500
-  TRAIN_WARM_STEPS=150
+  TRAIN_STEPS=1000
+  TRAIN_WARM_STEPS=100
 fi
 
 # set data dir

@@ -4,9 +4,9 @@
 SCRIPT_PATH=$(realpath $0)
 SCRIPT_DIR_PATH=$(dirname $SCRIPT_PATH)
 if [ ! "$BASH_VERSION" ]; then
-    echo "Using bash to run this script $0" 1>&2
-    exec bash $SCRIPT_PATH "$@"
-    exit 1
+  echo "Using bash to run this script $0" 1>&2
+  exec bash $SCRIPT_PATH "$@"
+  exit 1
 fi
 
 # process commandline args
@@ -60,11 +60,34 @@ if [[ "$*" == *"rocblas"* ]]; then
   TRAIN_DIR="${TRAIN_DIR}_rocblas"
 fi
 
+# rocblas trace
+if [[ "$*" == *"map"* ]]; then
+  echo "Mapping GEMMs"
+  export ROCBLAS_LAYER=2
+  export HCC_SERIALIZE_KERNEL=3
+  export HCC_SERIALIZE_COPY=3
+  export HCC_PROFILE=2
+  TRAIN_STEPS=2
+  TRAIN_WARM_STEPS=1
+  TRAIN_DIR="${TRAIN_DIR}_gemm_map"
+fi
+
 #set num of train steps
 if [[ "$*" == *"debug"* ]]; then
   echo "Debug run"
-  TRAIN_STEPS=10
-  TRAIN_WARM_STEPS=1
+
+  if [ -n "$TRAIN_STEPS" ]; then
+    echo "TRAIN_STEPS already set"
+  else
+    TRAIN_STEPS=10
+  fi
+
+  if [ -n "$TRAIN_WARM_STEPS" ]; then
+    echo "TRAIN_WARM_STEPS already set"
+  else
+    TRAIN_WARM_STEPS=1
+  fi
+
   TRAIN_DIR="${TRAIN_DIR}_debug"
 else
   TRAIN_STEPS=1000
@@ -118,6 +141,11 @@ fi
 # rocblas trace
 if [[ "$*" == *"rocblas"* ]]; then
   export ROCBLAS_LOG_TRACE_PATH=$CUR_TRAIN_DIR/rocblas_log_trace.txt
+  export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench.txt
+fi
+
+# rocblas trace
+if [[ "$*" == *"map"* ]]; then
   export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench.txt
 fi
 

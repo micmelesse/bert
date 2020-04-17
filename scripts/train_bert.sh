@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # use bash
 SCRIPT_PATH=$(realpath $0)
@@ -57,6 +58,8 @@ fi
 if [[ "$*" == *"rocblas"* ]]; then
   echo "ROCBLAS Trace"
   export ROCBLAS_LAYER=3
+  TRAIN_STEPS=100
+  TRAIN_WARM_STEPS=10
   TRAIN_DIR="${TRAIN_DIR}_rocblas"
 fi
 
@@ -90,15 +93,24 @@ if [[ "$*" == *"debug"* ]]; then
 
   TRAIN_DIR="${TRAIN_DIR}_debug"
 else
-  TRAIN_STEPS=1000
-  TRAIN_WARM_STEPS=100
+
+  if [ -n "$TRAIN_STEPS" ]; then
+    echo "TRAIN_STEPS already set"
+  else
+    TRAIN_STEPS=1000
+  fi
+
+  if [ -n "$TRAIN_WARM_STEPS" ]; then
+    echo "TRAIN_WARM_STEPS already set"
+  else
+    TRAIN_WARM_STEPS=100
+  fi
 fi
 
 # set data dir
 DATA_DIR=./data
 
-# clean prev train dir
-rm -rf $TRAIN_DIR
+# create train dir
 mkdir -p $TRAIN_DIR
 
 # prep train dir
@@ -109,7 +121,7 @@ DATA_SOURCE_FILE_PATH=data/wiki_00
 DATA_SOURCE_NAME=$(basename "$DATA_SOURCE_FILE_PATH")
 
 # iterate through configs (Batch, Sequence Length)
-BATCH=4
+BATCH=6
 SEQ=512
 
 # calculate max prediction per seq
@@ -121,6 +133,11 @@ MAX_PREDICTION_PER_SEQ=$(calc_max_pred)
 
 # create config train dir
 CUR_TRAIN_DIR=$TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}
+
+# clean prev train dir
+rm -rf $CUR_TRAIN_DIR
+
+# create fresh train dir
 mkdir -p $CUR_TRAIN_DIR
 
 DATA_TFRECORD=$DATA_DIR/${DATA_SOURCE_NAME}_seq${SEQ}.tfrecord
@@ -140,13 +157,13 @@ fi
 
 # rocblas trace
 if [[ "$*" == *"rocblas"* ]]; then
-  export ROCBLAS_LOG_TRACE_PATH=$CUR_TRAIN_DIR/rocblas_log_trace.txt
-  export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench.txt
+  export ROCBLAS_LOG_TRACE_PATH=$CUR_TRAIN_DIR/rocblas_log_trace_ba${BATCH}_seq${SEQ}.txt
+  export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench_ba${BATCH}_seq${SEQ}.txt
 fi
 
 # rocblas trace
 if [[ "$*" == *"map"* ]]; then
-  export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench.txt
+  export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench_ba${BATCH}_seq${SEQ}.txt
 fi
 
 # run pretraining
@@ -163,6 +180,12 @@ python3 run_pretraining.py \
   --num_warmup_steps=$TRAIN_WARM_STEPS \
   --learning_rate=1e-4 \
   2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}.txt
+
+# rocblas trace
+if [[ "$*" == *"rocblas"* ]]; then
+  pip3 install pandas
+  python3 scripts/get_rocblas_bench_count.py $CUR_TRAIN_DIR/rocblas_log_bench_ba${BATCH}_seq${SEQ}.txt
+fi
 
 # get rpt summary
 if [[ "$*" == *"rpt"* ]]; then

@@ -20,6 +20,7 @@ from __future__ import print_function
 
 import re
 import tensorflow as tf
+tf.compat.v1.disable_resource_variables()
 
 try:
   import horovod.tensorflow as hvd
@@ -28,12 +29,12 @@ except:
 
 def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu, use_hvd=False, optimizer_type="adam"):
   """Creates an optimizer training op."""
-  global_step = tf.train.get_or_create_global_step()
+  global_step = tf.compat.v1.train.get_or_create_global_step()
 
   learning_rate = tf.constant(value=init_lr, shape=[], dtype=tf.float32)
 
   # Implements linear decay of the learning rate.
-  learning_rate = tf.train.polynomial_decay(
+  learning_rate = tf.compat.v1.train.polynomial_decay(
       learning_rate,
       global_step,
       num_train_steps,
@@ -88,9 +89,9 @@ def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu, 
     optimizer = hvd.DistributedOptimizer(optimizer)
 
   if use_tpu:
-    optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+    optimizer = tf.compat.v1.tpu.CrossShardOptimizer(optimizer)
 
-  tvars = tf.trainable_variables()
+  tvars = tf.compat.v1.trainable_variables()
   if use_hvd:
     # [HVD] Use distributed optimizer to compute gradients
     grads_and_vars=optimizer.compute_gradients(loss, tvars)
@@ -98,7 +99,7 @@ def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu, 
     tvars = [var for grad,var in grads_and_vars]
   else:
     # Use standard TF gradients
-    grads = tf.gradients(loss, tvars)
+    grads = tf.gradients(ys=loss, xs=tvars)
 
   # This is how the model was pre-trained.
   (grads, _) = tf.clip_by_global_norm(grads, clip_norm=1.0)
@@ -111,7 +112,7 @@ def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu, 
   train_op = tf.group(train_op, [global_step.assign(new_global_step)])
   return train_op
 
-class AdamWeightDecayOptimizer(tf.train.Optimizer):
+class AdamWeightDecayOptimizer(tf.compat.v1.train.Optimizer):
   """A basic Adam optimizer that includes "correct" L2 weight decay."""
 
   def __init__(self,
@@ -141,18 +142,18 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 
       param_name = self._get_variable_name(param.name)
 
-      m = tf.get_variable(
+      m = tf.compat.v1.get_variable(
           name=param_name + "/adam_m",
           shape=param.shape.as_list(),
           dtype=tf.float32,
           trainable=False,
-          initializer=tf.zeros_initializer())
-      v = tf.get_variable(
+          initializer=tf.compat.v1.zeros_initializer())
+      v = tf.compat.v1.get_variable(
           name=param_name + "/adam_v",
           shape=param.shape.as_list(),
           dtype=tf.float32,
           trainable=False,
-          initializer=tf.zeros_initializer())
+          initializer=tf.compat.v1.zeros_initializer())
 
       # Standard Adam update.
       next_m = (
@@ -201,7 +202,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
     return param_name
 
 
-class LAMBOptimizer(tf.train.Optimizer):
+class LAMBOptimizer(tf.compat.v1.train.Optimizer):
   """
   LAMBOptimizer optimizer. 
   https://github.com/ymcui/LAMB_Optimizer_TF
@@ -241,18 +242,18 @@ class LAMBOptimizer(tf.train.Optimizer):
 
       param_name = self._get_variable_name(param.name)
 
-      m = tf.get_variable(
+      m = tf.compat.v1.get_variable(
           name=param_name + "/lamb_m",
           shape=param.shape.as_list(),
           dtype=tf.float32,
           trainable=False,
-          initializer=tf.zeros_initializer())
-      v = tf.get_variable(
+          initializer=tf.compat.v1.zeros_initializer())
+      v = tf.compat.v1.get_variable(
           name=param_name + "/lamb_v",
           shape=param.shape.as_list(),
           dtype=tf.float32,
           trainable=False,
-          initializer=tf.zeros_initializer())
+          initializer=tf.compat.v1.zeros_initializer())
 
       # Standard Adam update.
       next_m = (
@@ -283,10 +284,10 @@ class LAMBOptimizer(tf.train.Optimizer):
       # ratio = array_ops.where(math_ops.greater(w_norm, 0), array_ops.where(
       #      math_ops.greater(g_norm, 0), (w_norm / g_norm), 1.0), 1.0)
 
-      r1 = tf.sqrt(tf.reduce_sum(tf.square(param)))
-      r2 = tf.sqrt(tf.reduce_sum(tf.square(update)))
+      r1 = tf.sqrt(tf.reduce_sum(input_tensor=tf.square(param)))
+      r2 = tf.sqrt(tf.reduce_sum(input_tensor=tf.square(update)))
 
-      r = tf.where(tf.greater(r1, 0.0), tf.where(
+      r = tf.compat.v1.where(tf.greater(r1, 0.0), tf.compat.v1.where(
         tf.greater(r2, 0.0), r1/r2, 1.0), 1.0)
 
       eta = self.learning_rate * r

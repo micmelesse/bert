@@ -39,12 +39,24 @@ else
   TRAIN_DIR="${TRAIN_DIR}_sgpu"
 fi
 
+# choose hardware
 if [[ "$*" == *"nvidia"* ]]; then
   echo "Running on Nvidia"
   TRAIN_DIR="${TRAIN_DIR}_nvidia"
 else
   echo "Running on AMD"
   TRAIN_DIR="${TRAIN_DIR}_amd"
+fi
+
+# choose precision
+if [[ "$*" == *"fp16"* ]]; then
+  echo "Running FP16"
+  TRAIN_DIR="${TRAIN_DIR}_fp16"
+  PREC=fp16
+else
+  echo "Running FP32"
+  TRAIN_DIR="${TRAIN_DIR}_fp32"
+  PREC=fp32
 fi
 
 # collect rpt summary
@@ -132,7 +144,7 @@ calc_max_pred() {
 MAX_PREDICTION_PER_SEQ=$(calc_max_pred)
 
 # create config train dir
-CUR_TRAIN_DIR=$TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}
+CUR_TRAIN_DIR=$TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}
 
 # clean prev train dir
 rm -rf $CUR_TRAIN_DIR
@@ -157,17 +169,34 @@ fi
 
 # rocblas trace
 if [[ "$*" == *"rocblas"* ]]; then
-  export ROCBLAS_LOG_TRACE_PATH=$CUR_TRAIN_DIR/rocblas_log_trace_ba${BATCH}_seq${SEQ}.txt
-  export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench_ba${BATCH}_seq${SEQ}.txt
+  export ROCBLAS_LOG_TRACE_PATH=$CUR_TRAIN_DIR/rocblas_log_trace_ba${BATCH}_seq${SEQ}_${PREC}.txt
+  export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench_ba${BATCH}_seq${SEQ}_${PREC}.txt
 fi
 
 # rocblas trace
 if [[ "$*" == *"map"* ]]; then
-  export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench_ba${BATCH}_seq${SEQ}.txt
+  export ROCBLAS_LOG_BENCH_PATH=$CUR_TRAIN_DIR/rocblas_log_bench_ba${BATCH}_seq${SEQ}_${PREC}.txt
 fi
 
 # run pretraining
-python3 run_pretraining.py \
+# choose precision
+if [[ "$*" == *"fp16"* ]]; then
+  python3 run_pretraining_fp16.py \
+    --input_file=$DATA_TFRECORD \
+    --output_dir=$CUR_TRAIN_DIR \
+    --do_train=True \
+    --do_eval=True \
+    --bert_config_file=$TRAIN_DIR/bert_config.json \
+    --train_batch_size=$BATCH \
+    --max_seq_length=$SEQ \
+    --max_predictions_per_seq=$MAX_PREDICTION_PER_SEQ \
+    --num_train_steps=$TRAIN_STEPS \
+    --num_warmup_steps=$TRAIN_WARM_STEPS \
+    --learning_rate=1e-4 \
+    --auto_mixed_precision=True \
+    2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt
+else
+  python3 run_pretraining.py \
   --input_file=$DATA_TFRECORD \
   --output_dir=$CUR_TRAIN_DIR \
   --do_train=True \
@@ -179,16 +208,18 @@ python3 run_pretraining.py \
   --num_train_steps=$TRAIN_STEPS \
   --num_warmup_steps=$TRAIN_WARM_STEPS \
   --learning_rate=1e-4 \
-  2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}.txt
+  2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt
+fi
+
 
 # rocblas trace
 if [[ "$*" == *"rocblas"* ]]; then
   pip3 install pandas
-  python3 scripts/get_rocblas_bench_count.py $CUR_TRAIN_DIR/rocblas_log_bench_ba${BATCH}_seq${SEQ}.txt
+  python3 scripts/get_rocblas_bench_count.py $CUR_TRAIN_DIR/rocblas_log_bench_ba${BATCH}_seq${SEQ}_${PREC}.txt
 fi
 
 # get rpt summary
 if [[ "$*" == *"rpt"* ]]; then
-  /opt/rocm/hcc/bin/rpt --topn -1 $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}.txt \
-    >$CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_rpt_summary.txt
+  /opt/rocm/hcc/bin/rpt --topn -1 $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt \
+    >$CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}_rpt_summary.txt
 fi

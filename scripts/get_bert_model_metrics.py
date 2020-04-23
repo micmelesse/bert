@@ -43,6 +43,7 @@ if args.bert_train_dir:
 
         csv_path = os.path.join(args.bert_train_dir,
                                 s.replace("/", "--")+".csv")
-        print("Saving", csv_path)
+        # print("Saving", csv_path)
         s_data = get_scalar_data(event_acc, s)
+        print(s+" avg: ",s_data["value"].mean())
         s_data.to_csv(csv_path)

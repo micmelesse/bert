@@ -39,11 +39,15 @@ if args.bert_train_dir:
     tags = event_acc.Tags()
     scalars = tags["scalars"]
 
+    avgs=[]
     for s in scalars:
 
         csv_path = os.path.join(args.bert_train_dir,
                                 s.replace("/", "--")+".csv")
-        # print("Saving", csv_path)
+        print("Saving", csv_path)
         s_data = get_scalar_data(event_acc, s)
-        print(s+" avg: ",s_data["value"].mean())
+        avgs.append(s+" avg: "+str(s_data["value"].mean()))
         s_data.to_csv(csv_path)
+
+    for a in avgs:
+        print(a)

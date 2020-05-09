@@ -92,16 +92,14 @@ if [[ "$*" == *"debug"* ]]; then
   echo "Debug run"
 
   if [ -n "$TRAIN_STEPS" ]; then
-    echo "TRAIN_STEPS already set"
-  else
-    TRAIN_STEPS=10
+    echo "TRAIN_STEPS set for Debugging"
   fi
+  TRAIN_STEPS=10
 
   if [ -n "$TRAIN_WARM_STEPS" ]; then
-    echo "TRAIN_WARM_STEPS already set"
-  else
-    TRAIN_WARM_STEPS=1
+    echo "TRAIN_WARM_STEPS set for Debugging"
   fi
+  TRAIN_WARM_STEPS=1
 
   TRAIN_DIR="${TRAIN_DIR}_debug"
 else
@@ -142,6 +140,7 @@ calc_max_pred() {
   echo $(python3 -c "import math; print(math.ceil($SEQ*$MASKED_LM_PROB))")
 }
 MAX_PREDICTION_PER_SEQ=$(calc_max_pred)
+echo "MAX_PREDICTION_PER_SEQ: $MAX_PREDICTION_PER_SEQ"
 
 # create config train dir
 CUR_TRAIN_DIR=$TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}
@@ -210,7 +209,6 @@ else
   --learning_rate=1e-4 \
   2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt
 fi
-
 
 # rocblas trace
 if [[ "$*" == *"rocblas"* ]]; then

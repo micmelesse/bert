@@ -70,8 +70,6 @@ fi
 if [[ "$*" == *"rocblas"* ]]; then
   echo "ROCBLAS Trace"
   export ROCBLAS_LAYER=3
-  TRAIN_STEPS=100
-  TRAIN_WARM_STEPS=10
   TRAIN_DIR="${TRAIN_DIR}_rocblas"
 fi
 

@@ -81,8 +81,7 @@ GEMMs = [
          hidden_size, type_vocab_size, 0,  hidden_size),
         ("gemm", "f32_r", "N", "T", hidden_size, type_vocab_size,  total_token_count, 1,
          hidden_size, type_vocab_size, 0, hidden_size),
-        ("gemm", "f32_r", "T", "N", type_vocab_size, batch_size, hidden_size, 1,
-         hidden_size, hidden_size, 0, type_vocab_size),
+        None,
         ("gemm", "f32_r", "N", "N",  hidden_size, eval_total_token_count,
          type_vocab_size, 1, hidden_size, type_vocab_size, 0, hidden_size)
     ],
@@ -195,52 +194,57 @@ GEMMs = [
 
 ]
 
-for i, g in enumerate(GEMMs):
+def print_train_gemm_configs(g):
     forward_gemm = g[0]
     backward_gemm = g[1]
     backward_gemm_2 = g[2]
-    eval_gemm = g[3]
 
     if forward_gemm[0] == "gemm":
-
-        if do_train:
-            for step in range(num_train_steps):
-                if i >= 1 and i <= 9:
-                    for layer in range(num_hidden_layers):
-                        print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*forward_gemm))
-                        print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*backward_gemm))
-                        print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*backward_gemm_2))
-                else:
-                    print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*forward_gemm))
-                    print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*backward_gemm))
-                    print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*backward_gemm_2))
-
-        if do_eval:
-            for step in range(max_eval_steps):
-                if i >= 1 and i <= 9:
-                    for layer in range(num_hidden_layers):
-                        print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*eval_gemm))
-                else:
-                    print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*eval_gemm))
-
+        if forward_gemm:
+            print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*forward_gemm))
+        
+        if backward_gemm: 
+            print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*backward_gemm))
+        
+        if backward_gemm_2:
+            print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*backward_gemm_2))
     elif forward_gemm[0] == "gemm_strided_batched":
+        if forward_gemm:
+            print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*forward_gemm))
+        
+        if backward_gemm:
+            print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*backward_gemm))
+        
+        if backward_gemm_2:
+            print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*backward_gemm_2))
 
-        if do_train:
-            for step in range(num_train_steps):
-                if i >= 1 and i <= 9:
-                    for layer in range(num_hidden_layers):
-                        print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*forward_gemm))
-                        print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*backward_gemm))
-                        print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*backward_gemm_2))
-                else:
-                    print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*forward_gemm))
-                    print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*backward_gemm))
-                    print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*backward_gemm_2))
+def print_eval_gemm_configs(g):
+    eval_gemm = g[3]
 
-        if do_eval:
-            for step in range(max_eval_steps):
-                if i >= 1 and i <= 9:
-                    for layer in range(num_hidden_layers):
-                        print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*eval_gemm))
-                else:
-                    print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*eval_gemm))
+    if eval_gemm[0] == "gemm":
+        if eval_gemm:
+            print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*eval_gemm))
+        
+        
+    elif eval_gemm[0] == "gemm_strided_batched":
+        if eval_gemm:
+            print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*eval_gemm))
+        
+for i, g in enumerate(GEMMs):
+    if do_train:
+        for step in range(num_train_steps):
+            if i >= 1 and i <= 8:
+                for layer in range(num_hidden_layers):
+                    print_train_gemm_configs(g)
+            else:
+                print_train_gemm_configs(g)
+
+    if do_eval:
+        for step in range(max_eval_steps):
+            if i >= 1 and i <= 8:
+                for layer in range(num_hidden_layers):
+                    print_eval_gemm_configs(g)
+            else:
+                print_eval_gemm_configs(g)
+
+   

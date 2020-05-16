@@ -33,6 +33,9 @@ max_prediction_per_seq = args.max_prediction_per_seq
 num_train_steps = args.num_train_steps
 max_eval_steps = args.max_eval_steps
 
+if max_prediction_per_seq != int(math.ceil(seq_length*0.15)):
+    print("WARNING: max_prediction_per_seq is usually set to int(math.ceil(seq_length*0.15))",file=sys.stderr)
+
 if args.bert_config_file:
     config_file = json.load(open(args.bert_config_file))
     hidden_size = config_file['hidden_size']
@@ -194,6 +197,7 @@ GEMMs = [
 
 ]
 
+
 def print_train_gemm_configs(g):
     forward_gemm = g[0]
     backward_gemm = g[1]
@@ -202,21 +206,22 @@ def print_train_gemm_configs(g):
     if forward_gemm[0] == "gemm":
         if forward_gemm:
             print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*forward_gemm))
-        
-        if backward_gemm: 
+
+        if backward_gemm:
             print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*backward_gemm))
-        
+
         if backward_gemm_2:
             print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*backward_gemm_2))
     elif forward_gemm[0] == "gemm_strided_batched":
         if forward_gemm:
             print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*forward_gemm))
-        
+
         if backward_gemm:
             print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*backward_gemm))
-        
+
         if backward_gemm_2:
             print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*backward_gemm_2))
+
 
 def print_eval_gemm_configs(g):
     eval_gemm = g[3]
@@ -224,12 +229,12 @@ def print_eval_gemm_configs(g):
     if eval_gemm[0] == "gemm":
         if eval_gemm:
             print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --ldb {} --beta {} --ldc {}".format(*eval_gemm))
-        
-        
+
     elif eval_gemm[0] == "gemm_strided_batched":
         if eval_gemm:
             print("./rocblas-bench -f {} -r {} --transposeA {} --transposeB {} -m {} -n {} -k {} --alpha {} --lda {} --stride_a {} --ldb {} --stride_b {} --beta {} --ldc {} --stride_c {} --batch_count {}".format(*eval_gemm))
-        
+
+
 for i, g in enumerate(GEMMs):
     if do_train:
         for step in range(num_train_steps):
@@ -239,6 +244,7 @@ for i, g in enumerate(GEMMs):
             else:
                 print_train_gemm_configs(g)
 
+for i, g in enumerate(GEMMs):
     if do_eval:
         for step in range(max_eval_steps):
             if i >= 1 and i <= 8:
@@ -246,5 +252,3 @@ for i, g in enumerate(GEMMs):
                     print_eval_gemm_configs(g)
             else:
                 print_eval_gemm_configs(g)
-
-   

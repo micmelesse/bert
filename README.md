@@ -73,12 +73,12 @@ First download and preprocess wikipedia with the following script. By default it
 bash scripts/get_wikipedia_dataset.sh
 ```
 
-Then run pretraining inside our container. By default it assume an 8 GPU node with 1000000 steps but you can adjust the number of GPUs and number of steps inside the script.
+Then run pretraining inside our container. By default it assume an 8 GPU node with 1000000 steps but you can adjust the number of GPUs and number of steps inside the script. Note that this will note give you a fully trained model. The original paper trained on 64 TPUs for 1000000 steps.
 ```
 bash scripts/run_model_in_rocm_hvd_docker_with_wikipedia.sh
 ```
 
-If you want to extract loss over time and other model metrics 
+If you want to extract the loss over time and other model metrics use the script below. It generates csvs inside the training directory for the loss,examples per second and global steps per seconds.
 ```
 bash scripts/get_bert_model_metrics.py dashboard_train_dir/wikipedia_ba40_seq128/
 ```

@@ -12,7 +12,11 @@ git clone https://github.com/attardi/wikiextractor
 python3 wikiextractor/WikiExtractor.py -o wiki_text enwiki-latest-pages-articles.xml
 
 # set seq length
-SEQ=128
+if [ $# -eq 0 ]; then
+    SEQ=128
+else
+    SEQ=$1
+fi
 
 # calculate max prediction per seq
 MASKED_LM_PROB=0.15

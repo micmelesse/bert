@@ -65,6 +65,24 @@ the `--optimizer_type` commandline option set to the following:
 The code is converted to use TensorFlow v2. The proper version of TensorFlow should
 be installed on node to run the code on, or in the docker container to be used.
 
+### E. Wikipedia Training
+We can use Horovod to train on a single node using the following scripts. 
+
+First download and preprocess wikipedia with the following script. By default it preprocess for sequence length 128 but you can alter that inside the script.
+```
+bash scripts/get_wikipedia_dataset.sh
+```
+
+Then run pretraining inside our container. By default it assume an 8 GPU node with 1000000 steps but you can adjust the number of GPUs and number of steps inside the script.
+```
+bash scripts/run_model_in_rocm_hvd_docker_with_wikipedia.sh
+```
+
+If you want to extract loss over time and other model metrics 
+```
+bash scripts/get_bert_model_metrics.py dashboard_train_dir/wikipedia_ba40_seq128/
+```
+
 ## Below is the original Google README
 
 **\*\*\*\*\* New March 11th, 2020: Smaller BERT Models \*\*\*\*\***

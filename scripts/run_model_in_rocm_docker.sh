@@ -9,7 +9,7 @@ SEQ=128
 BATCH=8
 
 # Container image used
-IMAGE="rocm/tensorflow:rocm3.3-tf2.1-dev"
+IMAGE="rocm/tensorflow:rocm3.1-tf1.15-dev"
 
 # Print a message
 echo "This script will run the $MODEL model in a ROCm container."
@@ -97,7 +97,6 @@ echo
 echo "=== Training BERT ==="
 CUR_TRAINING=${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}
 mkdir -p $TRAIN_DIR/$CUR_TRAINING
-OUTPUT_FILE_REL=$CUR_TRAINING/$CUR_TRAINING.txt
 
 TRAIN_STEPS=200
 WARMUP_STEPS=50
@@ -118,16 +117,7 @@ python3 $CODE_DIR_INSIDE/run_pretraining.py \
   --num_train_steps=$TRAIN_STEPS \
   --num_warmup_steps=$WARMUP_STEPS \
   --learning_rate=$LEARNING_RATE \
-  2>&1 | tee $TRAIN_DIR/$OUTPUT_FILE_REL
-
-# Calculate performance metrics
-echo 
-echo "=== Training Performance ==="
-if [ ! -f "$OUTPUT_FILE" ]; then
-  docker exec $CTNRNAME \
-  python3 $CODE_DIR_INSIDE/scripts/calc_performance_metrics.py \
-    $TRAIN_DIR_INSIDE/$OUTPUT_FILE_REL $SEQ $BATCH
-fi
+  2>&1 | tee $TRAIN_DIR/$CUR_TRAINING/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}.txt
 
 # Cleaning up
 echo 

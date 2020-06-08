@@ -18,25 +18,26 @@ from __future__ import print_function
 
 import optimization
 import tensorflow as tf
+tf.compat.v1.disable_resource_variables()
 
 
 class OptimizationTest(tf.test.TestCase):
 
   def test_adam(self):
     with self.test_session() as sess:
-      w = tf.get_variable(
+      w = tf.compat.v1.get_variable(
           "w",
           shape=[3],
-          initializer=tf.constant_initializer([0.1, -0.2, -0.1]))
+          initializer=tf.compat.v1.constant_initializer([0.1, -0.2, -0.1]))
       x = tf.constant([0.4, 0.2, -0.5])
-      loss = tf.reduce_mean(tf.square(x - w))
-      tvars = tf.trainable_variables()
-      grads = tf.gradients(loss, tvars)
-      global_step = tf.train.get_or_create_global_step()
+      loss = tf.reduce_mean(input_tensor=tf.square(x - w))
+      tvars = tf.compat.v1.trainable_variables()
+      grads = tf.gradients(ys=loss, xs=tvars)
+      global_step = tf.compat.v1.train.get_or_create_global_step()
       optimizer = optimization.AdamWeightDecayOptimizer(learning_rate=0.2)
       train_op = optimizer.apply_gradients(zip(grads, tvars), global_step)
-      init_op = tf.group(tf.global_variables_initializer(),
-                         tf.local_variables_initializer())
+      init_op = tf.group(tf.compat.v1.global_variables_initializer(),
+                         tf.compat.v1.local_variables_initializer())
       sess.run(init_op)
       for _ in range(100):
         sess.run(train_op)

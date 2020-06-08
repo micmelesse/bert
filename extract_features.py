@@ -27,7 +27,7 @@ import modeling
 import tokenization
 import tensorflow as tf
 
-flags = tf.flags
+flags = tf.compat.v1.flags
 
 FLAGS = flags.FLAGS
 
@@ -168,7 +168,7 @@ def model_fn_builder(bert_config, init_checkpoint, layer_indexes, use_tpu,
     if mode != tf.estimator.ModeKeys.PREDICT:
       raise ValueError("Only PREDICT modes are supported: %s" % (mode))
 
-    tvars = tf.trainable_variables()
+    tvars = tf.compat.v1.trainable_variables()
     scaffold_fn = None
     (assignment_map,
      initialized_variable_names) = modeling.get_assignment_map_from_checkpoint(
@@ -176,19 +176,19 @@ def model_fn_builder(bert_config, init_checkpoint, layer_indexes, use_tpu,
     if use_tpu:
 
       def tpu_scaffold():
-        tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
-        return tf.train.Scaffold()
+        tf.compat.v1.train.init_from_checkpoint(init_checkpoint, assignment_map)
+        return tf.compat.v1.train.Scaffold()
 
       scaffold_fn = tpu_scaffold
     else:
-      tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
+      tf.compat.v1.train.init_from_checkpoint(init_checkpoint, assignment_map)
 
-    tf.logging.info("**** Trainable Variables ****")
+    tf.compat.v1.logging.info("**** Trainable Variables ****")
     for var in tvars:
       init_string = ""
       if var.name in initialized_variable_names:
         init_string = ", *INIT_FROM_CKPT*"
-      tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
+      tf.compat.v1.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
                       init_string)
 
     all_layers = model.get_all_encoder_layers()
@@ -200,7 +200,7 @@ def model_fn_builder(bert_config, init_checkpoint, layer_indexes, use_tpu,
     for (i, layer_index) in enumerate(layer_indexes):
       predictions["layer_output_%d" % i] = all_layers[layer_index]
 
-    output_spec = tf.contrib.tpu.TPUEstimatorSpec(
+    output_spec = tf.compat.v1.estimator.tpu.TPUEstimatorSpec(
         mode=mode, predictions=predictions, scaffold_fn=scaffold_fn)
     return output_spec
 
@@ -280,13 +280,13 @@ def convert_examples_to_features(examples, seq_length, tokenizer):
     assert len(input_type_ids) == seq_length
 
     if ex_index < 5:
-      tf.logging.info("*** Example ***")
-      tf.logging.info("unique_id: %s" % (example.unique_id))
-      tf.logging.info("tokens: %s" % " ".join(
+      tf.compat.v1.logging.info("*** Example ***")
+      tf.compat.v1.logging.info("unique_id: %s" % (example.unique_id))
+      tf.compat.v1.logging.info("tokens: %s" % " ".join(
           [tokenization.printable_text(x) for x in tokens]))
-      tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-      tf.logging.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
-      tf.logging.info(
+      tf.compat.v1.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
+      tf.compat.v1.logging.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
+      tf.compat.v1.logging.info(
           "input_type_ids: %s" % " ".join([str(x) for x in input_type_ids]))
 
     features.append(
@@ -320,7 +320,7 @@ def read_examples(input_file):
   """Read a list of `InputExample`s from an input file."""
   examples = []
   unique_id = 0
-  with tf.gfile.GFile(input_file, "r") as reader:
+  with tf.io.gfile.GFile(input_file, "r") as reader:
     while True:
       line = tokenization.convert_to_unicode(reader.readline())
       if not line:
@@ -341,7 +341,7 @@ def read_examples(input_file):
 
 
 def main(_):
-  tf.logging.set_verbosity(tf.logging.INFO)
+  tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
 
   layer_indexes = [int(x) for x in FLAGS.layers.split(",")]
 
@@ -350,10 +350,10 @@ def main(_):
   tokenizer = tokenization.FullTokenizer(
       vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case)
 
-  is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
-  run_config = tf.contrib.tpu.RunConfig(
+  is_per_host = tf.compat.v1.estimator.tpu.InputPipelineConfig.PER_HOST_V2
+  run_config = tf.compat.v1.estimator.tpu.RunConfig(
       master=FLAGS.master,
-      tpu_config=tf.contrib.tpu.TPUConfig(
+      tpu_config=tf.compat.v1.estimator.tpu.TPUConfig(
           num_shards=FLAGS.num_tpu_cores,
           per_host_input_for_training=is_per_host))
 
@@ -375,7 +375,7 @@ def main(_):
 
   # If TPU is not available, this will fall back to normal Estimator on CPU
   # or GPU.
-  estimator = tf.contrib.tpu.TPUEstimator(
+  estimator = tf.compat.v1.estimator.tpu.TPUEstimator(
       use_tpu=FLAGS.use_tpu,
       model_fn=model_fn,
       config=run_config,
@@ -384,7 +384,7 @@ def main(_):
   input_fn = input_fn_builder(
       features=features, seq_length=FLAGS.max_seq_length)
 
-  with codecs.getwriter("utf-8")(tf.gfile.Open(FLAGS.output_file,
+  with codecs.getwriter("utf-8")(tf.io.gfile.GFile(FLAGS.output_file,
                                                "w")) as writer:
     for result in estimator.predict(input_fn, yield_single_examples=True):
       unique_id = int(result["unique_id"])
@@ -416,4 +416,4 @@ if __name__ == "__main__":
   flags.mark_flag_as_required("bert_config_file")
   flags.mark_flag_as_required("init_checkpoint")
   flags.mark_flag_as_required("output_file")
-  tf.app.run()
+  tf.compat.v1.app.run()

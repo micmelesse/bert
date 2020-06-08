@@ -6,7 +6,9 @@ This BERT repository is a fork from the original [BERT repository by Google](htt
 
 * Added a one file test script to verify that the code works in AMD ROCm;
 * Added code to enable Horovod scaling in pre-training, and corresponding script to run
-the pre-training on a cluster.
+the pre-training on a cluster;
+* Added optional LAMB and Nesterov LAMB optimizer;
+* Converted the code for TensorFlow v2.
 
 ### A. One file test script
 
@@ -46,6 +48,22 @@ scripts/run_model_in_rocm_hvd_docker.sh
 The same parameters may be modified in this script as in the previous script file.
 In additional, this parameter can be adjusted:
 * The number of GPUs used.
+
+### C. LAMB and Nesterov Optimizer
+
+LAMB “Layer-wise Adaptive Moments optimizer for Batch training” is implemented as 
+an optional feature. Nesterov optimization can be used with either ADAM or LAMB. 
+To use the these optimizer, please run `pre_training.py` with
+the `--optimizer_type` commandline option set to the following:
+* adam - ADAM optimizer (default if nothing is specified),
+* lamb - LAMB optimizer,
+* nadam - Nesterov ADAM optimizer, or
+* nlamb - Nesterov LAMB.
+
+### D. TensorFlow v2
+
+The code is converted to use TensorFlow v2. The proper version of TensorFlow should
+be installed on node to run the code on, or in the docker container to be used.
 
 ## Below is the original Google README
 

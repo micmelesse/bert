@@ -214,6 +214,12 @@ if [[ "$*" == *"rocblas"* ]]; then
   python3 scripts/get_rocblas_bench_count.py $CUR_TRAIN_DIR/rocblas_log_bench_ba${BATCH}_seq${SEQ}_${PREC}.txt
 fi
 
+# model metrics
+if [[ "$*" == *"metrics"* ]]; then
+  pip3 install pandas
+  python3 scripts/get_bert_model_metrics.py $CUR_TRAIN_DIR
+fi
+
 # get rpt summary
 if [[ "$*" == *"rpt"* ]]; then
   /opt/rocm/hcc/bin/rpt --topn -1 $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt \

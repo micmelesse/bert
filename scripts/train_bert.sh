@@ -73,6 +73,12 @@ if [[ "$*" == *"rocblas"* ]]; then
   TRAIN_DIR="${TRAIN_DIR}_rocblas"
 fi
 
+# Model Metrics
+if [[ "$*" == *"metrics"* ]]; then
+  echo "Collect Model Metrics"
+  TRAIN_DIR="${TRAIN_DIR}_metrics"
+fi
+
 # rocblas trace
 if [[ "$*" == *"map"* ]]; then
   echo "Mapping GEMMs"

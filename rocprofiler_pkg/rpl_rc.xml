@@ -1,0 +1,8 @@
+<defaults
+  # basenames=off
+  # timestamp=off
+  # heartbeat=0
+  # ctx-limit=0
+  # sqtt-size=0x20M
+  # sqtt-local=on
+></defaults>

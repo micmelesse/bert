@@ -1,0 +1,7 @@
+# full list
+# pmc: Wavefronts,VALUInsts,SALUInsts,SFetchInsts,FlatVMemInsts,LDSInsts,FlatLDSInsts,GDSInsts,VALUUtilization,FetchSize,WriteSize,L2CacheHit,SQ_WAVES,SQ_INSTS_VMEM_RD,SQ_INSTS_VMEM_WR,TA_FLAT_WRITE_WAVEFRONTS_sum,TA_FLAT_READ_WAVEFRONTS_sum,VFetchInsts,VWriteInsts,GRBM_GUI_ACTIVE,GRBM_COUNT,GPUBusy,VALUBusy,SALUBusy,MemUnitStalled,WriteUnitStalled,LDSBankConflict,TA_BUSY_avr,TA_BUSY_max,TA_BUSY_min,MemUnitBusy
+
+# partitioned tp meet GFX9 HW counters limits
+pmc: L2CacheHit VFetchInsts VWriteInsts MemUnitStalled WriteUnitStalled FetchSize TA_FLAT_WRITE_WAVEFRONTS_sum TA_FLAT_READ_WAVEFRONTS_sum FlatVMemInsts LDSInsts VALUInsts SALUInsts FlatLDSInsts GPUBusy Wavefronts SQ_WAVES SQ_INSTS_VMEM_RD SQ_INSTS_VMEM_WR GRBM_GUI_ACTIVE GRBM_COUNT
+pmc: MemUnitBusy WriteSize TA_BUSY_avr TA_BUSY_max TA_BUSY_min SFetchInsts GDSInsts VALUUtilization VALUBusy SALUBusy LDSBankConflict
+

@@ -1,0 +1,6 @@
+11/01/2019: enable rocprofiler kernels trace with counters by --hsa-trace;
+            fixing signal value for proxy signal;
+            fixing scope options in .txt input format;
+
+11/08/2019: ROCr/HSA kernels - dumping of granulated lds, sgpr, vgpr reserved by HW for the kernel
+            profiled cmd line quoting option - '--cmd-qts <on|off>'

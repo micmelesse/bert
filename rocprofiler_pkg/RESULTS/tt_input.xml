@@ -1,0 +1,6 @@
+# Trace enabling and the parameters definition
+<trace name="SQTT">
+  <parameters
+    TARGET_CU=1
+  ></parameters>
+</trace>

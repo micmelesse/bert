@@ -59,11 +59,16 @@ else
   PREC=fp32
 fi
 
-# collect rpt summary
-if [[ "$*" == *"rpt"* ]]; then
-  echo "Collecting RPT summary"
-  export HCC_PROFILE=2
-  TRAIN_DIR="${TRAIN_DIR}_rpt"
+# collect rocprof summary
+if [[ "$*" == *"rocprof"* ]]; then
+  echo "Collecting rocprof summary"
+  TRAIN_DIR="${TRAIN_DIR}_rocprof"
+fi
+
+# collect nvprof summary
+if [[ "$*" == *"nvprof"* ]]; then
+  echo "Collecting nvprof summary"
+  TRAIN_DIR="${TRAIN_DIR}_nvprof"
 fi
 
 # rocblas trace
@@ -199,19 +204,56 @@ if [[ "$*" == *"fp16"* ]]; then
     --auto_mixed_precision=True \
     2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt
 else
-  python3 run_pretraining.py \
-  --input_file=$DATA_TFRECORD \
-  --output_dir=$CUR_TRAIN_DIR \
-  --do_train=True \
-  --do_eval=True \
-  --bert_config_file=$TRAIN_DIR/bert_config.json \
-  --train_batch_size=$BATCH \
-  --max_seq_length=$SEQ \
-  --max_predictions_per_seq=$MAX_PREDICTION_PER_SEQ \
-  --num_train_steps=$TRAIN_STEPS \
-  --num_warmup_steps=$TRAIN_WARM_STEPS \
-  --learning_rate=1e-4 \
-  2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt
+  # get rocprof summary
+  if [[ "$*" == *"rocprof"* ]]; then
+    rocprof --hip-trace \
+      python3 run_pretraining.py \
+      --input_file=$DATA_TFRECORD \
+      --output_dir=$CUR_TRAIN_DIR \
+      --do_train=True \
+      --do_eval=True \
+      --bert_config_file=$TRAIN_DIR/bert_config.json \
+      --train_batch_size=$BATCH \
+      --max_seq_length=$SEQ \
+      --max_predictions_per_seq=$MAX_PREDICTION_PER_SEQ \
+      --num_train_steps=$TRAIN_STEPS \
+      --num_warmup_steps=$TRAIN_WARM_STEPS \
+      --learning_rate=1e-4 \
+      2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt
+
+    mv results.* $CUR_TRAIN_DIR
+  # get nvprof summary
+  elif [[ "$*" == *"nvprof"* ]]; then
+    nvprof --normalized-time-unit us --demangling off --log-file $CUR_TRAIN_DIR/results_nvprof.log \
+      python3 run_pretraining.py \
+      --input_file=$DATA_TFRECORD \
+      --output_dir=$CUR_TRAIN_DIR \
+      --do_train=True \
+      --do_eval=True \
+      --bert_config_file=$TRAIN_DIR/bert_config.json \
+      --train_batch_size=$BATCH \
+      --max_seq_length=$SEQ \
+      --max_predictions_per_seq=$MAX_PREDICTION_PER_SEQ \
+      --num_train_steps=$TRAIN_STEPS \
+      --num_warmup_steps=$TRAIN_WARM_STEPS \
+      --learning_rate=1e-4 \
+      2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt
+
+  else
+    python3 run_pretraining.py \
+      --input_file=$DATA_TFRECORD \
+      --output_dir=$CUR_TRAIN_DIR \
+      --do_train=True \
+      --do_eval=True \
+      --bert_config_file=$TRAIN_DIR/bert_config.json \
+      --train_batch_size=$BATCH \
+      --max_seq_length=$SEQ \
+      --max_predictions_per_seq=$MAX_PREDICTION_PER_SEQ \
+      --num_train_steps=$TRAIN_STEPS \
+      --num_warmup_steps=$TRAIN_WARM_STEPS \
+      --learning_rate=1e-4 \
+      2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt
+  fi
 fi
 
 # rocblas trace
@@ -224,10 +266,4 @@ fi
 if [[ "$*" == *"metrics"* ]]; then
   pip3 install pandas
   python3 scripts/get_bert_model_metrics.py $CUR_TRAIN_DIR
-fi
-
-# get rpt summary
-if [[ "$*" == *"rpt"* ]]; then
-  /opt/rocm/hcc/bin/rpt --topn -1 $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt \
-    >$CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}_rpt_summary.txt
 fi

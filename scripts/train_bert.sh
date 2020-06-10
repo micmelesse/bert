@@ -206,7 +206,7 @@ if [[ "$*" == *"fp16"* ]]; then
 else
   # get rocprof summary
   if [[ "$*" == *"rocprof"* ]]; then
-    rocprof --hip-trace \
+    rocprof --hsa-trace --obj-tracking on \
       python3 run_pretraining.py \
       --input_file=$DATA_TFRECORD \
       --output_dir=$CUR_TRAIN_DIR \

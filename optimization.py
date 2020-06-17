@@ -21,6 +21,7 @@ from __future__ import print_function
 import re
 import tensorflow as tf
 tf.compat.v1.disable_resource_variables()
+tf.compat.v1.disable_eager_execution()
 
 try:
   import horovod.tensorflow as hvd
@@ -153,7 +154,7 @@ class AdamWeightDecayOptimizer(tf.compat.v1.train.Optimizer):
     """Constructs a AdamWeightDecayOptimizer."""
     super(AdamWeightDecayOptimizer, self).__init__(False, name)
 
-    self.learning_rate = learning_rate
+    self.learning_rate = tf.identity(learning_rate, name='learning_rate')
     self.weight_decay_rate = weight_decay_rate
     self.beta_1 = beta_1
     self.beta_2 = beta_2
@@ -253,7 +254,7 @@ class LAMBOptimizer(tf.compat.v1.train.Optimizer):
     """Constructs a LAMBOptimizer."""
     super(LAMBOptimizer, self).__init__(False, name)
 
-    self.learning_rate = learning_rate
+    self.learning_rate = tf.identity(learning_rate, name='learning_rate')
     self.weight_decay_rate = weight_decay_rate
     self.beta_1 = beta_1
     self.beta_2 = beta_2
@@ -369,7 +370,7 @@ class NadamWeightDecayOptimizer(tf.compat.v1.train.Optimizer):
     """Constructs a NadamWeightDecayOptimizer."""
     super(NadamWeightDecayOptimizer, self).__init__(False, name)
 
-    self.learning_rate = learning_rate
+    self.learning_rate = tf.identity(learning_rate, name='learning_rate')
     self.weight_decay_rate = weight_decay_rate
     self.beta_1 = beta_1
     self.beta_2 = beta_2
@@ -481,7 +482,7 @@ class NlambOptimizer(tf.compat.v1.train.Optimizer):
     """Constructs a NlamOptimizer."""
     super(NlambOptimizer, self).__init__(False, name)
 
-    self.learning_rate = learning_rate
+    self.learning_rate = tf.identity(learning_rate, name='learning_rate')
     self.weight_decay_rate = weight_decay_rate
     self.beta_1 = beta_1
     self.beta_2 = beta_2

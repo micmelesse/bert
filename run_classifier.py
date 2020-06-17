@@ -26,6 +26,7 @@ import optimization
 import tokenization
 import tensorflow as tf
 tf.compat.v1.disable_resource_variables()
+tf.compat.v1.disable_eager_execution()
 
 flags = tf.compat.v1.flags
 
@@ -123,6 +124,13 @@ flags.DEFINE_string("master", None, "[Optional] TensorFlow master URL.")
 flags.DEFINE_integer(
     "num_tpu_cores", 8,
     "Only used if `use_tpu` is True. Total number of TPU cores to use.")
+
+flags.DEFINE_bool("enable_timeline", False,
+                  "Whether to enable generation of profiling data.")
+
+flags.DEFINE_integer("num_timeline_steps", 1,
+                     "Only used if `enable_timeline` is True. "
+                     "Generate timeline for every Nth step.")
 
 
 class InputExample(object):
@@ -878,7 +886,15 @@ def main(_):
         seq_length=FLAGS.max_seq_length,
         is_training=True,
         drop_remainder=True)
-    estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
+
+    hooks = []
+    if FLAGS.enable_timeline:
+      profiler_hook = tf.estimator.ProfilerHook(
+        save_steps=FLAGS.num_timeline_steps,
+        output_dir=FLAGS.output_dir)
+      hooks.append(profiler_hook)
+
+    estimator.train(input_fn=train_input_fn, max_steps=num_train_steps, hooks=hooks)
 
   if FLAGS.do_eval:
     eval_examples = processor.get_dev_examples(FLAGS.data_dir)

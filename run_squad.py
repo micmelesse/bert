@@ -29,6 +29,7 @@ import tokenization
 import six
 import tensorflow as tf
 tf.compat.v1.disable_resource_variables()
+tf.compat.v1.disable_eager_execution()
 
 flags = tf.compat.v1.flags
 
@@ -153,6 +154,14 @@ flags.DEFINE_bool(
 flags.DEFINE_float(
     "null_score_diff_threshold", 0.0,
     "If null_score - best_non_null is greater than the threshold predict null.")
+
+
+flags.DEFINE_bool("enable_timeline", False,
+                  "Whether to enable generation of profiling data.")
+
+flags.DEFINE_integer("num_timeline_steps", 1,
+                     "Only used if `enable_timeline` is True. "
+                     "Generate timeline for every Nth step.")
 
 
 class SquadExample(object):
@@ -1213,7 +1222,15 @@ def main(_):
         seq_length=FLAGS.max_seq_length,
         is_training=True,
         drop_remainder=True)
-    estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
+
+    hooks = []
+    if FLAGS.enable_timeline:
+      profiler_hook = tf.estimator.ProfilerHook(
+        save_steps=FLAGS.num_timeline_steps,
+        output_dir=FLAGS.output_dir)
+      hooks.append(profiler_hook)
+
+    estimator.train(input_fn=train_input_fn, max_steps=num_train_steps, hooks=hooks)
 
   if FLAGS.do_predict:
     eval_examples = read_squad_examples(

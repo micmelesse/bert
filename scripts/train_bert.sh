@@ -238,7 +238,21 @@ else
       --num_warmup_steps=$TRAIN_WARM_STEPS \
       --learning_rate=1e-4 \
       2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt
-
+  elif [[ "$*" == *"timeline"* ]]; then
+    python3 run_pretraining.py \
+      --input_file=$DATA_TFRECORD \
+      --output_dir=$CUR_TRAIN_DIR \
+      --do_train=True \
+      --do_eval=True \
+      --bert_config_file=$TRAIN_DIR/bert_config.json \
+      --train_batch_size=$BATCH \
+      --max_seq_length=$SEQ \
+      --max_predictions_per_seq=$MAX_PREDICTION_PER_SEQ \
+      --num_train_steps=$TRAIN_STEPS \
+      --num_warmup_steps=$TRAIN_WARM_STEPS \
+      --learning_rate=1e-4 \
+      --enable_timeline
+      2>&1 | tee $CUR_TRAIN_DIR/${DATA_SOURCE_NAME}_ba${BATCH}_seq${SEQ}_${PREC}.txt
   else
     python3 run_pretraining.py \
       --input_file=$DATA_TFRECORD \
